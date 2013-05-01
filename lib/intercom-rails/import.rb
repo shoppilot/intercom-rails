@@ -27,7 +27,7 @@ module IntercomRails
       @status_enabled = !!options[:status_enabled]
 
       if uri.scheme == 'https'
-        http.use_ssl = true 
+        http.use_ssl = true
         http.ca_file = File.join(File.dirname(__FILE__), '../data/cacert.pem')
         http.verify_mode = OpenSSL::SSL::VERIFY_PEER
       end
@@ -60,6 +60,10 @@ module IntercomRails
 
       info "Sending users in batches of #{MAX_BATCH_SIZE}:"
       batches do |batch, number_in_batch|
+        puts "=========== batch ================"
+        puts batch.inspect
+        puts "=================================="
+
         failures = send_users(batch)['failed']
         self.failed += failures
         self.total_sent += number_in_batch
@@ -69,7 +73,7 @@ module IntercomRails
       end
       info "Successfully created #{self.total_sent - self.failed.count} users", :new_line => true
       info "Failed to create #{self.failed.count} #{(self.failed.count == 1) ? 'user' : 'users'}, this is likely due to bad data" unless failed.count.zero?
-      
+
       self
     end
 
@@ -118,15 +122,15 @@ module IntercomRails
         User
       end
     rescue NameError
-      # Rails lazy loads constants, so this is how we check 
+      # Rails lazy loads constants, so this is how we check
       nil
     end
 
     def send_users(users)
-      request = Net::HTTP::Post.new(uri.request_uri) 
+      request = Net::HTTP::Post.new(uri.request_uri)
       request.basic_auth(IntercomRails.config.app_id, IntercomRails.config.api_key)
       request["Content-Type"] = "application/json"
-      request.body = users 
+      request.body = users
 
       response = perform_request(request)
       JSON.parse(response.body)
@@ -135,7 +139,7 @@ module IntercomRails
     MAX_REQUEST_ATTEMPTS = 3
     def perform_request(request, attempts = 0, error = {})
       if (attempts > 0) && (attempts < MAX_REQUEST_ATTEMPTS)
-        sleep(0.5) 
+        sleep(0.5)
       elsif error.present?
         raise error[:exception] if error[:exception]
         raise exception_for_failed_response(error[:failed_response])
